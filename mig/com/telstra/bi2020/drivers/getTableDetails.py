@@ -1,0 +1,132 @@
+#!/usr/bin/python
+# -*- coding: iso-8859-15 -*-
+# ###################################################################################
+# Copyright © 2019 by Telstra Corporation, All rights reserved                      #
+#                                                                                   #
+# This software is proprietary to and embodies the confidential technology          #
+# of Telstra Corporation. Possession, use, or copying of this software and media is #
+# authorized only pursuant to a valid written license from Telstra or               #
+# an authorized sublicensor.                                                        #
+#                                                                                   #
+# File:       getTableDetails.py                                                          #
+# Created:    Platform Team Engineers, 17-Oct-2019                                  #
+#                                                                                   #
+# Modification history:                                                             #
+# None                                                                              # 
+#                                                                                   #
+# <Example>                                                                         #
+# Modified:  John   05-May-2020                                                     #
+#            Jira Task#: Modification for logging format                            #
+#                                                                                   #
+#####################################################################################
+
+#Import All required libraries
+import logging
+import os
+
+
+show_create_table = "show create table"
+table_stats = "show table stats "
+table_rows_count = "select count (*) from "
+
+from com.telstra.bi2020.dao.ImpalaDAO import ImpalaDAO
+from com.telstra.bi2020.dao.Queries import Queries
+
+
+class getTableDetails:
+
+    '''
+    /******************************************************************************
+    * FUNCTION
+    *   __init__
+    *
+    * DESCRIPTION
+    *   This is a constructor, which loads all the database and logging information
+    *
+    *****************************************************************************/
+    '''
+    def __init__(self,whatisthis):
+        print ''
+
+    def cleanupResults(self,details,begin):
+        subStringEnd = 'Fetched'
+        tlist = str((details[details.find(begin)+len(begin):details.rfind(subStringEnd)]).strip())
+        return tlist
+
+
+    def showCreateTable(self,tableName):
+        dao = ImpalaDAO('Migration')
+        conn_object = dao.getConString()
+        qs = Queries('GETTABLEDETAILS')
+        get_query = qs.getQuery('CREATE')
+        impala_query = conn_object + "'" +get_query + tableName +"'"
+        showCreateTablecmd = dao.getResults(impala_query)
+
+        subStringstart =  get_query + tableName
+        details = self.cleanupResults(showCreateTablecmd,subStringstart)
+        if details.startswith('"') and details.endswith('"'):
+            details = details[1:-1]
+        return details
+
+    def showTableStats(self,tableName):
+        dao = ImpalaDAO('Migration')
+        conn_object = dao.getConString()
+        qs = Queries('GETTABLEDETAILS')
+        get_query = qs.getQuery('STATS')
+
+        impala_query = conn_object + "'" +get_query + tableName +"'"
+        showTableStasOutput = dao.getResults(impala_query)
+
+        subStringstart =  get_query + tableName
+        details = self.cleanupResults(showTableStasOutput,subStringstart)
+        return details
+
+    def showRowsCount(self,tableName):
+        dao = ImpalaDAO('Migration')
+        conn_object = dao.getConString()
+        qs = Queries('GETTABLEDETAILS')
+        get_query = qs.getQuery('COUNT')
+
+        impala_query = conn_object + "'" +get_query + tableName +"'"
+        showRowCountOuput = dao.getResults(impala_query)
+        subStringstart =  "Query progress can be monitored"
+        
+        details = self.cleanupResults(showRowCountOuput,subStringstart)
+        details = details.splitlines()[1]
+        return details
+    
+
+
+
+    '''
+    /******************************************************************************
+    * FUNCTION
+    *   __init__
+    *
+    * DESCRIPTION
+    *   This is a constructor, which loads all the database and logging information
+    *
+    *****************************************************************************/
+    '''
+    def getTblDetails(self,tableName):
+        dao = ImpalaDAO('Migration')
+        conn_object = dao.getConString()
+        qs = Queries('TBstart')
+        get_query = qs.getQuery('TABLE')
+        shcreatetabledetails = self.showCreateTable(tableName)
+        #print 'hello3'
+        #tbllist = str((details[details.find(begin)+len(begin):details.rfind(subStringEnd)]).strip())
+        if "STORED AS KUDU" not in shcreatetabledetails:
+            showtblstatsdetails = self.showTableStats(tableName)
+                                    
+        else:
+            showtblstatsdetails = "" 
+            
+        
+        #print  'hello4'
+        showrowcount = self.showRowsCount(tableName)
+        #print 'hello5'
+        
+        return shcreatetabledetails, showtblstatsdetails, showrowcount
+
+

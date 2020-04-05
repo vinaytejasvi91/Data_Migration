@@ -1,0 +1,2 @@
+export PYTHONPATH=/home/d88167i/mig
+python /home/d88167i/mig/com/telstra/bi2020/engine/Driver.py

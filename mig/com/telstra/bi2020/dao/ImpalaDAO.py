@@ -1,0 +1,86 @@
+#!/usr/bin/python
+# -*- coding: iso-8859-15 -*-
+# ###################################################################################
+# Copyright © 2019 by Telstra Corporation, All rights reserved                      #
+#                                                                                   #
+# This software is proprietary to and embodies the confidential technology          #
+# of Telstra Corporation. Possession, use, or copying of this software and media is #
+# authorized only pursuant to a valid written license from Telstra or               #
+# an authorized sublicensor.                                                        #
+#                                                                                   #
+# File:       impalaDAO.py                                                          #
+# Created:    Platform Team Engineers, 17-Oct-2019                                  #
+#                                                                                   #
+# Modification history:                                                             #
+# None                                                                              # 
+#                                                                                   #
+# <Example>                                                                         #
+# Modified:  John   05-May-2020                                                     #
+#            Jira Task#: Modification for logging format                            #
+#                                                                                   #
+#####################################################################################
+
+#Import All required libraries
+import logging
+import commands
+
+
+class ImpalaDAO:
+    '''
+    /******************************************************************************
+     * FUNCTION
+     *   Constructor
+     *
+     * DESCRIPTION
+     *   This loads the logger
+     *
+     *****************************************************************************/
+    '''
+    def __init__(self,purpose):
+        self.purpose = purpose;
+        
+    '''
+    /******************************************************************************
+     * FUNCTION
+     *   getConnection
+     *
+     * DESCRIPTION
+     *   This functions connects to Impala Database
+     *
+     * RETURN VALUE
+     *   Connection handle
+     *
+     *****************************************************************************/
+    '''
+    def getConString(self):
+        try:
+	    connect_string = 'impala-shell -i lxapp6344.datahub.cloud.telstra.com -d default -k --ssl --ca_cert=/opt/cloudera/security/pki/rootca-intca.cert.pem -B   -q '
+            return connect_string
+        except:
+            print "Connection String Retuned : Failure"
+            raise
+
+    '''
+    /******************************************************************************
+     * FUNCTION
+     *   getResults
+     *
+     * DESCRIPTION
+     *   This functions get's the connection handle, And runs the given query
+     *
+     * PARAMETER DESCRIPTIONS AND REQUIREMENTS
+     *   data_query
+     *     A SQL string which has SQL statements
+     *
+     * RETURN VALUE
+     *   Results returned from execute query
+     *
+     *****************************************************************************/
+    '''
+    def getResults(self, impala_query):
+        try:
+	    status, output = commands.getstatusoutput(impala_query)
+            return output
+        except:
+            raise
+

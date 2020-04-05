@@ -1,0 +1,123 @@
+#!/usr/bin/python
+# -*- coding: iso-8859-15 -*-
+# ###################################################################################
+# Copyright © 2019 by Telstra Corporation, All rights reserved                      #
+#                                                                                   #
+# This software is proprietary to and embodies the confidential technology          #
+# of Telstra Corporation. Possession, use, or copying of this software and media is #
+# authorized only pursuant to a valid written license from Telstra or               #
+# an authorized sublicensor.                                                        #
+#                                                                                   #
+# File:       impalaDAO.py                                                          #
+# Created:    Platform Team Engineers, 17-Oct-2019                                  #
+#                                                                                   #
+# Modification history:                                                             #
+# None                                                                              # 
+#                                                                                   #
+# <Example>                                                                         #
+# Modified:  John   05-May-2020                                                     #
+#            Jira Task#: Modification for logging format                            #
+#                                                                                   #
+#####################################################################################
+
+#Import All required libraries
+import logging
+import os
+
+
+dblistquery = "show databases"
+shtable = "show create table"
+stats = "show table stats "
+
+from com.telstra.bi2020.dao.ImpalaDAO import ImpalaDAO
+from com.telstra.bi2020.dao.Queries import Queries
+from com.telstra.bi2020.drivers.getTableDetails import getTableDetails
+from com.telstra.bi2020.putils.putil import createFolder
+from com.telstra.bi2020.putils.putil import writeFile
+
+class listTables:
+    
+    '''
+    /******************************************************************************
+    * FUNCTION
+    *   __init__
+    *
+    * DESCRIPTION
+    *   This is a constructor, which loads all the database and logging information
+    *
+    *****************************************************************************/
+    '''
+    def __init__(self):
+        print ''
+
+    def cleanupTableNames(self,tableList):
+
+        ext_table_start = 'Query: show tables'
+        ext_table_end = 'Fetched'
+        output = tableList
+        tlist = str((output[output.find(ext_table_start)+len(ext_table_start):output.rfind(ext_table_end)]).strip())
+        return tlist;
+
+    '''
+    /******************************************************************************
+    * FUNCTION
+    *   __init__
+    *
+    * DESCRIPTION
+    *   This is a constructor, which loads all the database and logging information
+    *
+    *****************************************************************************/
+    '''
+    def getTables(self,databases):
+        
+        dao = ImpalaDAO('Migration')
+        conn_object = dao.getConString()
+        qs = Queries('TBstart')
+        get_query = qs.getQuery('TABLE');
+        table = getTableDetails('TABLEDETAILS')
+        totalCountHDFSTables = 0
+        totalCountKUDUTables = 0
+        
+        print "Total Number of Filtered(_kmp,_hist,_lk) Databases = " + str(len(databases))
+        for db in databases:
+            impala_query = conn_object + "'use " +db +';' +get_query +"'"
+            tablelist = dao.getResults(impala_query)
+            tlist = self.cleanupTableNames(tablelist)
+            tcount = 0
+            countHDFSTables = 0
+            countKuduTables = 0
+            tablelist = list(db + "." + x for x in tlist.split('\n'))
+            table_count = len(tablelist)
+            
+			writePath = "/home/d88642a/mig/com/telstra/bi2020/destination"
+            writePath = writePath + '/' + db 
+            print writePath
+            createFolder(writePath)
+            writePath = ''            
+            print ''
+            print "The datbase " +db +" has " +str(table_count) +" tables"
+            if table_count> 0:
+                              
+                filteredTables = [tbl for tbl in tablelist if "_vw" not in tbl]
+                print 'Total Number of Filtered(not _VW) Tables = ' +str(len(filteredTables))
+                for every_table in filteredTables:
+                    tcount = tcount + 1
+                    showCreateTableDetails, showTableStatsDetails, showRowCount = table.getTblDetails(every_table)
+                    if (showCreateTableDetails.find('STORED AS KUDU') != -1):
+                        countKuduTables += 1
+                                   
+                    else:
+                        countHDFSTables += 1
+                print 'Processed Tables Count = ' + str(tcount)
+            else:
+                print "The datbase " +db +" has " +str(table_count) +" tables (No Processing) "
+                        
+            print 'HDFS Tables = '+str(countHDFSTables) +' , KUDU Tables = '+str(countKuduTables)
+            totalCountHDFSTables += countHDFSTables
+            totalCountKUDUTables += countKuduTables
+            
+
+        print "Total Number of HDFS tables = " + str(totalCountHDFSTables) 
+        print "Total Number of Kudu tables = " + str(totalCountKUDUTables) 
+         
+                
